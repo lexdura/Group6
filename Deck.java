@@ -32,10 +32,10 @@ public class Deck
 		int placement;
 		Random rand = new Random();
 		//Will traverse the deck from beginning to end using index i
-		for(int i=0; i<=numberOfCards; i++)
+		for(int i=0; i<=numberOfCards-1; i++)
 		{
 			//selects a random # between 0-52
-			placement = rand.nextInt(53);
+			placement = rand.nextInt(52);
 			
 			//swaps card i with whatever random card was chosen
 			Card temp = availableCards[i];
