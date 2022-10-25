@@ -2,14 +2,14 @@ package blackjack;
 
 public class Player 
 {
-	String name;
-	int chips;
-	int total;
-	Card card1;
-	Card card2;
-	Card[] hitCards = new Card[20];
-	boolean bust;
-	boolean hasAce;
+	private String name;
+	private int chips;
+	private int total;
+	private Card card1;
+	private Card card2;
+	private Card[] hitCards = new Card[20];
+	private boolean bust;
+	private boolean hasAce;
 	
 	//Constructor
 	public Player(String chosenName, int startingChips)
@@ -48,10 +48,49 @@ public class Player
 		return card2;
 	}
 	
+	//Sets card1 to incoming card
+	public void setCard1(Card c)
+	{
+		card1 = c;
+	}
+	
+	//Sets card2 to incoming card
+	public void setCard2(Card c)
+	{
+		card2 = c;
+	}
+	
 	//Returns desired hitCard (assumes exclusion of 0-starting-count)
 	public Card getHitCard(int x)
 	{
 		return hitCards[x+1];
+	}
+	
+	//Returns bust value
+	public boolean isBusted()
+	{
+		return bust;
+	}
+	
+	//Checks to see if an ace is held
+	public boolean hasAce()
+	{
+		if(card1.getValue() == 1)
+			hasAce = true;
+		if(card2.getValue() == 1)
+			hasAce = true;
+		return hasAce;
+	}
+	
+	//Resets relevant variables between hands
+	public void reset()
+	{
+		total = 0;
+		card1 = null;
+		card2 = null;
+		hitCards = null;
+		bust = false;
+		hasAce = false;
 	}
 	
 	/* 

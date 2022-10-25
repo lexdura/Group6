@@ -2,8 +2,8 @@ package blackjack;
 
 public class Card 
 {
-	String suit;
-	int value;
+	private String suit;
+	private int value;
 	
 	//Constructor
 	public Card(String incSuit, int incValue)

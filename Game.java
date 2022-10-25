@@ -1,7 +1,8 @@
 package blackjack;
 
-import java.util.Scanner;
 import javax.swing.*;
+import java.awt.Color;
+import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
@@ -12,49 +13,26 @@ public class Game
 	static Player[] computers = null;
 	static Deck deck = new Deck();
 	static Dealer dealer = new Dealer();
-	static int chips;
+	static int initialPurse;
 	static int numOfPlayers;
 	static String name;
 			
 	public static void main(String[] args)
 	{
+		boolean dealerPlayed;
 		gameGUI();
 		
-		//Get information from the user
-		Scanner get = new Scanner(System.in);
-		System.out.print("Welcome to Blackjack. Please enter your Name: ");
-		name = get.nextLine();
-		System.out.print("Hello " + name + ". Please enter the starting chip amount: ");
-		chips = get.nextInt();
-		System.out.print("Please enter the number of players that will be joining you today. (From 0-3): ");
-		numOfPlayers = get.nextInt(); 
-		//Error check to ensure the user entered a value within proper range
-		while(numOfPlayers < 0 || numOfPlayers > 3)
-		{
-			System.out.print("I'm sorry. We will only accept a number between 0-3. Please enter again: ");
-			numOfPlayers = get.nextInt();
-		}
-		
-		//Populate the game with the # of players. Assign names & chip value
-		user = new Player(name, chips);
-		if(numOfPlayers>0)
-		{
-			computers = new Player[numOfPlayers];
-			for(int i=0; i<numOfPlayers; i++)
-				computers[i] = new Player("Computer " + (i+1), chips);
-		}
-		
 		//Game loop
-		while(user.chips > 0)
+		while(user.getChips() > 0)
 		{
-			//Ensures dealer doesn't play multiple times
-			boolean dealerPlayed = false;
+			dealerPlayed = false;
 			
 			//Initial bets
 			
 			deal();
 			
 			//Check for Blackjack
+			checkBlackjack();
 			
 			//Play goes clockwise
 			if(computers != null)
@@ -63,24 +41,28 @@ public class Game
 			
 			//Player plays their turn
 			
-			/*If one player still left, have dealer take their turn
-			 * Checks computer busts first. Then Player.
+			/*If one player still left, have dealer take their turn. 
+			 * Checks computer busts first. Then user.
 			 */
 			if(computers != null)
 				for(int i = computers.length-1; i>=0; i--)
-					if(computers[i].bust == false)
+					if(computers[i].isBusted() == false)
 					{
 						//If there's a computer left, dealer takes turn & kicks out of loop
 						dealer.playTurn(deck);
 						dealerPlayed = true;
 						i=-1;
 					}
-			//Ensures dealer hasn't already played
-			if(user.bust == false && dealerPlayed == false)
+			if(user.isBusted() == false && dealerPlayed == false)
 				dealer.playTurn(deck);
 			
-			//Post game. Adjust chip amounts, reset deck
+			//Post hand. Adjust chip amounts, reset deck
 			deck.resetDeck();
+			user.reset();
+			dealer.reset();
+			if(computers != null)
+				for(int i = computers.length-1; i>=0; i--)
+					computers[i].reset();
 		}
 	}
 	
@@ -122,7 +104,7 @@ public class Game
 				{
 					//Sets variables to user input
 					name = getName.getText();
-					chips = Integer.parseInt(getPurse.getText());
+					initialPurse = Integer.parseInt(getPurse.getText());
 					numOfPlayers = Integer.parseInt(getComputers.getText());
 					userInfo.dispose();
 				}
@@ -156,46 +138,156 @@ public class Game
 	//Creates the GUI
 	public static void gameGUI()
 	{
+		//Frame for game
 		JFrame game = new JFrame("G6 - Blackjack");
 		getInfo(game);
 		game.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         game.setSize(1200, 800);
-        JPanel panel = new JPanel();
+		game.setLayout(null);
+		game.setVisible(true);
+		
+		//Populate the game with the # of players. Assign names & chip value
+		user = new Player(name, initialPurse);
+		if(numOfPlayers>0)
+		{
+			computers = new Player[numOfPlayers];
+			for(int i=0; i<numOfPlayers; i++)
+				computers[i] = new Player("Computer " + (i+1), initialPurse);
+		}
+		
+		//panel for dealer
+		JPanel dealerPanel = new JPanel();
+		dealerPanel.setBackground(Color.gray);
+		dealerPanel.setBounds(450,0,300,240);
+		dealerPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 100, 10));
+		JPanel dealerCardPanel = new JPanel();
+		dealerCardPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 10));
+		JLabel dealerCard1 = new JLabel("2 of Clubs"); //TO BE UPDATED TO HAVE REAL CARD VALUE
+		JLabel dealerCard2 = new JLabel("2 of Clubs"); //TO BE UPDATED TO HAVE REAL CARD VALUE
+		dealerCardPanel.add(dealerCard1);
+		dealerCardPanel.add(dealerCard2);
+		JLabel dealerName = new JLabel("Dealer");
+		dealerPanel.add(dealerName);
+		dealerPanel.add(dealerCardPanel);
+		game.add(dealerPanel);
+		
+		//panel for player
+        JPanel userPanel = new JPanel();
+		userPanel.setBackground(Color.red);
+		userPanel.setBounds(0,314,300,240);
+		userPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 75, 10));
+		JPanel userCardPanel = new JPanel();
+		userCardPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 10));
+		JLabel userCard1 = new JLabel("2 of Clubs"); //TO BE UPDATED TO HAVE REAL CARD VALUE
+		JLabel userCard2 = new JLabel("2 of Clubs"); //TO BE UPDATED TO HAVE REAL CARD VALUE
+		userCardPanel.add(userCard1);
+		userCardPanel.add(userCard2);
         JLabel userName = new JLabel(name);
-        JLabel purse = new JLabel(Integer.toString(chips));
-        JLabel computers = new JLabel(Integer.toString(numOfPlayers));
-        
-        panel.add(userName);
-        panel.add(purse);
-        panel.add(computers);
-        game.add(panel);
-        
-        
+        JLabel purse = new JLabel(Integer.toString(user.getChips()));
+        userPanel.add(userName);
+        userPanel.add(purse);
+        userPanel.add(userCardPanel);
+        game.add(userPanel);
+		
+		//panel for additional player 1
+		if(numOfPlayers > 0)
+		{
+			JPanel comp1Panel = new JPanel();
+			comp1Panel.setBackground(Color.LIGHT_GRAY);
+			comp1Panel.setBounds(300,314,300,240);
+			comp1Panel.setLayout(new FlowLayout(FlowLayout.CENTER, 75, 10));
+			JPanel comp1CardPanel = new JPanel();
+			comp1CardPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 10));
+			JLabel comp1Card1 = new JLabel("2 of Clubs"); //TO BE UPDATED TO HAVE REAL CARD VALUE
+			JLabel comp1Card2 = new JLabel("2 of Clubs"); //TO BE UPDATED TO HAVE REAL CARD VALUE
+			comp1CardPanel.add(comp1Card1);
+			comp1CardPanel.add(comp1Card2);
+			JLabel comp1Name = new JLabel(computers[0].getName());
+			JLabel comp1Chips = new JLabel(Integer.toString(computers[0].getChips()));
+			comp1Panel.add(comp1Name);
+			comp1Panel.add(comp1Chips);
+			comp1Panel.add(comp1CardPanel);
+			game.add(comp1Panel);
+		}
+		
+		//Panel for additional player 2
+		if(numOfPlayers >= 2)
+		{
+			JPanel comp2Panel = new JPanel();
+			comp2Panel.setBackground(Color.cyan);
+			comp2Panel.setBounds(600,314,300,240);
+			comp2Panel.setLayout(new FlowLayout(FlowLayout.CENTER, 75, 10));
+			JPanel comp2CardPanel = new JPanel();
+			comp2CardPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 10));
+			JLabel comp2Card1 = new JLabel("QUEEN OF DIAMONDS"); //TO BE UPDATED TO HAVE REAL CARD VALUE
+			JLabel comp2Card2 = new JLabel("QUEEN OF DIAMONDS"); //TO BE UPDATED TO HAVE REAL CARD VALUE
+			comp2CardPanel.add(comp2Card1);
+			comp2CardPanel.add(comp2Card2);
+			JLabel comp2Name = new JLabel(computers[1].getName());
+			JLabel comp2Chips = new JLabel(Integer.toString(computers[1].getChips()));
+			comp2Panel.add(comp2Name);
+			comp2Panel.add(comp2Chips);
+			comp2Panel.add(comp2CardPanel);
+			game.add(comp2Panel);
+		}
+
+		//Panel for additional player 3
+		if(numOfPlayers >= 3)
+		{
+			JPanel comp3Panel = new JPanel();
+			comp3Panel.setBackground(Color.GREEN);
+			comp3Panel.setBounds(900,314,300,240);
+			comp3Panel.setLayout(new FlowLayout(FlowLayout.CENTER, 75, 10));
+			JPanel comp3CardPanel = new JPanel();
+			comp3CardPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 10));
+			JLabel comp3Card1 = new JLabel("QUEEN OF DIAMONDS"); //TO BE UPDATED TO HAVE REAL CARD VALUE
+			JLabel comp3Card2 = new JLabel("QUEEN OF DIAMONDS"); //TO BE UPDATED TO HAVE REAL CARD VALUE
+			comp3CardPanel.add(comp3Card1);
+			comp3CardPanel.add(comp3Card2);
+			JLabel comp3Name = new JLabel(computers[2].getName());
+			JLabel comp3Chips = new JLabel(Integer.toString(computers[2].getChips()));
+			comp3Panel.add(comp3Name);
+			comp3Panel.add(comp3Chips);
+			comp3Panel.add(comp3CardPanel);
+			game.add(comp3Panel);
+		}
+
         game.setVisible(true);
 	}
-	
+
 	//Deals cards in a clockwise position starting with the "last" computer before ending at the dealer.
 	public static void deal()
 	{
-		while(dealer.card2 == null) //Since the dealer is the last to receive a card, once he has both cards, the deal ends
+		while(dealer.getCard2() == null) //Since the dealer is the last to receive a card, once he has both cards, the deal ends
 		{
 			//Accounts for there being no computers in the game
 			if(computers != null)
 				for(int i = computers.length-1; i>=0; i--)
 				{
-					if(computers[i].card1 == null)
-						computers[i].card1 = deck.getNextCard();
+					if(computers[i].getCard1() == null)
+						computers[i].setCard1(deck.getNextCard());
 					else
-						computers[i].card2 = deck.getNextCard();
+						computers[i].setCard2(deck.getNextCard());
 				}
-			if(user.card1 == null)
-				user.card1 = deck.getNextCard();
+			if(user.getCard1() == null)
+				user.setCard1(deck.getNextCard());
 			else
-				user.card2 = deck.getNextCard();
-			if(dealer.card1 == null)
-				dealer.card1 = deck.getNextCard();
+				user.setCard2(deck.getNextCard());
+			if(dealer.getCard1() == null)
+				dealer.setCard1(deck.getNextCard());
 			else
-				dealer.card2 = deck.getNextCard();
+				dealer.setCard2(deck.getNextCard());
 		}
+	}
+	
+	//Checks starting hand for blackjacks
+	public static void checkBlackjack()
+	{
+		if(computers != null)
+			for(int i = computers.length-1; i>=0; i--)
+			{
+				if(computers[i].hasAce());
+					
+			}
 	}
 }

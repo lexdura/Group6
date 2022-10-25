@@ -5,11 +5,11 @@ import java.util.Random;
 public class Deck 
 {
 	//Variables to be used throughout
-	String[] suits = {"Hearts", "Diamonds", "Spades", "Clubs"};
-	Card[] availableCards = new Card[numberOfCards];
-	Card[] usedCards = new Card[numberOfCards];
-	static final int numberOfCards = 52;
-	static final int cardsInSuit = 13;
+	private String[] suits = {"Hearts", "Diamonds", "Spades", "Clubs"};
+	private final int numberOfCards = 52;
+	private final int cardsInSuit = 13;
+	private Card[] availableCards = new Card[numberOfCards];
+	private Card[] usedCards = new Card[numberOfCards];
 	
 	//Constructor
 	public Deck()

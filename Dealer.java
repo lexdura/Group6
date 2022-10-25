@@ -2,20 +2,20 @@ package blackjack;
 
 public class Dealer 
 {
-	String name;
-	Card card1;
-	Card card2;
-	Card[] hitCards = new Card[20];
-	int total;
-	boolean bust;
-	boolean hasAce;
+	private String name;
+	private Card card1;
+	private Card card2;
+	private Card[] hitCards = new Card[52];
+	private int total;
+	private boolean bust;
+	private boolean hasAce;
 	
 	//Constructor
 	public Dealer()
 	{
 		name = "Dealer";
-		Card card1 = null;
-		Card card2 = null;
+		card1 = null;
+		card2 = null;
 		hitCards = null;
 		total = 0;
 		bust = false;
@@ -34,10 +34,32 @@ public class Dealer
 		return card2;
 	}
 	
+	//Sets card1 to incoming card
+	public void setCard1(Card c)
+	{
+		card1 = c;
+	}
+		
+	//Sets card2 to incoming card
+	public void setCard2(Card c)
+	{
+		card2 = c;
+	}
+	
 	//Returns desired hitCard (assumes exclusion of 0-starting-count)
 	public Card getHitCard(int x)
 	{
 		return hitCards[x+1];
+	}
+	
+	//Checks to see if an ace is held
+	public boolean hasAce()
+	{
+		if(card1.getValue() == 1)
+			hasAce = true;
+		if(card2.getValue() == 1)
+			hasAce = true;
+		return hasAce;
 	}
 	
 	//Returns "Dealer"
@@ -46,15 +68,29 @@ public class Dealer
 		return name;
 	}
 	
+	//Resets relevant variables between hands
+	public void reset()
+	{
+		total = 0;
+		card1 = null;
+		card2 = null;
+		hitCards = null;
+		bust = false;
+		hasAce = false;
+	}
+	
 	//The logic for the dealer's turn
 	public void playTurn(Deck deck)
 	{
+		//For traversing dealer's hit cards
+		int numOfHits = 0;
+		
 		//Checks initial cards to see if there's an ace
-		if(card1.value == 1 || card2.value == 1)
+		if(card1.getValue() == 1 || card2.getValue() == 1)
 			hasAce = true;
 		
 		//Initial card total
-		total = card1.value + card2.value;
+		total = card1.getValue() + card2.getValue();
 		
 		//Logic loop
 		while(true)
@@ -72,15 +108,11 @@ public class Dealer
 					return;
 			
 			//Picks up next card 
-			for(int i=0; i<hitCards.length; i++)
-				if(hitCards[i] == null) //Ensures addition, not replacement
-				{
-					hitCards[i] = deck.getNextCard();
-					if(hitCards[i].value == 1) //Checks to see if an ace is picked up
-						hasAce = true;
-					total += hitCards[i].value; //Updates the total
-					i = hitCards.length; //Kicks out of the loop as soon as a new card is added
-				}
+			hitCards[numOfHits] = deck.getNextCard();
+			if(hitCards[numOfHits].getValue() == 1) //Checks to see if an ace is picked up
+				hasAce = true;
+			total += hitCards[numOfHits].getValue(); //Updates the total
+			numOfHits++;
 			
 			//Checking to see if dealer busts
 			if(total > 21)
