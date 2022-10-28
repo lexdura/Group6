@@ -19,7 +19,7 @@ public class Card
 	}
 	
 	//Returns the name of the Card based on it's value
-	public String getName()
+	public String toString()
 	{
 		if(value == 1)
 			return "Ace of " + suit;

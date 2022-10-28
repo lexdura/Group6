@@ -15,24 +15,28 @@ public class Game
 	static Dealer dealer = new Dealer();
 	static int initialPurse;
 	static int numOfPlayers;
+	static int bet;
+	static boolean blackjack=false;
+	static boolean dealerPlayed=false;
 	static String name;
+	static JFrame game = new JFrame("G6 - Blackjack");
 			
 	public static void main(String[] args)
 	{
-		boolean dealerPlayed;
 		gameGUI();
 		
 		//Game loop
 		while(user.getChips() > 0)
 		{
-			dealerPlayed = false;
+			updateGUI();
 			
-			//Initial bets
-			
-			deal();
-			
-			//Check for Blackjack
+			//Check for Blackjack. If so, do postHand() and a new hand is started
 			checkBlackjack();
+			if(blackjack)
+			{
+				postHand();
+				continue;
+			}
 			
 			//Play goes clockwise
 			if(computers != null)
@@ -55,14 +59,11 @@ public class Game
 					}
 			if(user.isBusted() == false && dealerPlayed == false)
 				dealer.playTurn(deck);
+			updateGUI();
 			
 			//Post hand. Adjust chip amounts, reset deck
-			deck.resetDeck();
-			user.reset();
-			dealer.reset();
-			if(computers != null)
-				for(int i = computers.length-1; i>=0; i--)
-					computers[i].reset();
+			postHand();					
+			updateGUI();
 		}
 	}
 	
@@ -139,12 +140,10 @@ public class Game
 	public static void gameGUI()
 	{
 		//Frame for game
-		JFrame game = new JFrame("G6 - Blackjack");
 		getInfo(game);
 		game.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         game.setSize(1200, 800);
 		game.setLayout(null);
-		game.setVisible(true);
 		
 		//Populate the game with the # of players. Assign names & chip value
 		user = new Player(name, initialPurse);
@@ -162,8 +161,8 @@ public class Game
 		dealerPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 100, 10));
 		JPanel dealerCardPanel = new JPanel();
 		dealerCardPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 10));
-		JLabel dealerCard1 = new JLabel("2 of Clubs"); //TO BE UPDATED TO HAVE REAL CARD VALUE
-		JLabel dealerCard2 = new JLabel("2 of Clubs"); //TO BE UPDATED TO HAVE REAL CARD VALUE
+		JLabel dealerCard1 = new JLabel(dealer.getCard1().toString());
+		JLabel dealerCard2 = new JLabel(dealer.getCard2().toString());
 		dealerCardPanel.add(dealerCard1);
 		dealerCardPanel.add(dealerCard2);
 		JLabel dealerName = new JLabel("Dealer");
@@ -178,8 +177,8 @@ public class Game
 		userPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 75, 10));
 		JPanel userCardPanel = new JPanel();
 		userCardPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 10));
-		JLabel userCard1 = new JLabel("2 of Clubs"); //TO BE UPDATED TO HAVE REAL CARD VALUE
-		JLabel userCard2 = new JLabel("2 of Clubs"); //TO BE UPDATED TO HAVE REAL CARD VALUE
+		JLabel userCard1 = new JLabel(user.getCard1().toString());
+		JLabel userCard2 = new JLabel(user.getCard1().toString());
 		userCardPanel.add(userCard1);
 		userCardPanel.add(userCard2);
         JLabel userName = new JLabel(name);
@@ -198,8 +197,8 @@ public class Game
 			comp1Panel.setLayout(new FlowLayout(FlowLayout.CENTER, 75, 10));
 			JPanel comp1CardPanel = new JPanel();
 			comp1CardPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 10));
-			JLabel comp1Card1 = new JLabel("2 of Clubs"); //TO BE UPDATED TO HAVE REAL CARD VALUE
-			JLabel comp1Card2 = new JLabel("2 of Clubs"); //TO BE UPDATED TO HAVE REAL CARD VALUE
+			JLabel comp1Card1 = new JLabel(computers[0].getCard1().toString());
+			JLabel comp1Card2 = new JLabel(computers[0].getCard1().toString());
 			comp1CardPanel.add(comp1Card1);
 			comp1CardPanel.add(comp1Card2);
 			JLabel comp1Name = new JLabel(computers[0].getName());
@@ -219,8 +218,8 @@ public class Game
 			comp2Panel.setLayout(new FlowLayout(FlowLayout.CENTER, 75, 10));
 			JPanel comp2CardPanel = new JPanel();
 			comp2CardPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 10));
-			JLabel comp2Card1 = new JLabel("QUEEN OF DIAMONDS"); //TO BE UPDATED TO HAVE REAL CARD VALUE
-			JLabel comp2Card2 = new JLabel("QUEEN OF DIAMONDS"); //TO BE UPDATED TO HAVE REAL CARD VALUE
+			JLabel comp2Card1 = new JLabel(computers[1].getCard1().toString());
+			JLabel comp2Card2 = new JLabel(computers[1].getCard1().toString());
 			comp2CardPanel.add(comp2Card1);
 			comp2CardPanel.add(comp2Card2);
 			JLabel comp2Name = new JLabel(computers[1].getName());
@@ -240,8 +239,8 @@ public class Game
 			comp3Panel.setLayout(new FlowLayout(FlowLayout.CENTER, 75, 10));
 			JPanel comp3CardPanel = new JPanel();
 			comp3CardPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 10));
-			JLabel comp3Card1 = new JLabel("QUEEN OF DIAMONDS"); //TO BE UPDATED TO HAVE REAL CARD VALUE
-			JLabel comp3Card2 = new JLabel("QUEEN OF DIAMONDS"); //TO BE UPDATED TO HAVE REAL CARD VALUE
+			JLabel comp3Card1 = new JLabel(computers[2].getCard1().toString());
+			JLabel comp3Card2 = new JLabel(computers[2].getCard1().toString());
 			comp3CardPanel.add(comp3Card1);
 			comp3CardPanel.add(comp3Card2);
 			JLabel comp3Name = new JLabel(computers[2].getName());
@@ -251,8 +250,109 @@ public class Game
 			comp3Panel.add(comp3CardPanel);
 			game.add(comp3Panel);
 		}
-
+		
+		//Panel for game-play choices
+		JPanel choicePanel = new JPanel();
+		choicePanel.setLayout(null);
+		choicePanel.setBackground(Color.pink);
+		choicePanel.setBounds(300, 550, 600, 200);
+		JLabel betAmount = new JLabel("Bet Amount (2-500): ");
+		betAmount.setBounds(150, 10, 125, 30);
+		choicePanel.add(betAmount);
+		JTextField enteredAmount = new JTextField();
+		enteredAmount.setBounds(275, 10, 50, 30);
+		choicePanel.add(enteredAmount);
+		JButton deal = new JButton("Deal");
+		deal.setBounds(335, 10, 70, 30);
+		choicePanel.add(deal);
+		JButton hit = new JButton("Hit");
+		choicePanel.add(hit);
+		JButton stand = new JButton("Stand");
+		choicePanel.add(stand);
+		JButton doubleDown = new JButton("Double-down");
+		choicePanel.add(doubleDown);
+		JButton split = new JButton("Split");
+		choicePanel.add(split);
+		JButton surrender = new JButton("Surrender");
+		choicePanel.add(surrender);
+		game.add(choicePanel);
+		
+		
+		/*
+		 * LOGIC FOR BUTTONS
+		 */
+		//Deal
+		deal.addActionListener(new ActionListener()
+		{
+			public void actionPerformed(ActionEvent e)
+			{
+				if(Integer.parseInt(enteredAmount.getText()) >= 2 &&
+				   Integer.parseInt(enteredAmount.getText()) <= 500)
+				{
+					bet = Integer.parseInt(enteredAmount.getText());
+					if(computers != null)
+						for(int i = computers.length-1; i>=0; i--)
+							computers[i].adjustChips(-bet);
+					user.adjustChips(-bet);
+					deal();
+				}
+			}
+		});
+		
+		//Hit
+		hit.addActionListener(new ActionListener()
+		{
+			public void actionPerformed(ActionEvent e)
+			{
+				
+			}
+		});
+		
+		//Stand
+		stand.addActionListener(new ActionListener()
+		{
+			public void actionPerformed(ActionEvent e)
+			{
+				
+			}
+		});
+		
+		//Double-down
+		doubleDown.addActionListener(new ActionListener()
+		{
+			public void actionPerformed(ActionEvent e)
+			{
+				
+			}
+		});
+		
+		//Split
+		split.addActionListener(new ActionListener()
+		{
+			public void actionPerformed(ActionEvent e)
+			{
+				
+			}
+		});
+		
+		//Surrender
+		surrender.addActionListener(new ActionListener()
+		{
+			public void actionPerformed(ActionEvent e)
+			{
+				
+			}
+		});
+		
         game.setVisible(true);
+	}
+	
+	//Updates the gameGUI
+	public static void updateGUI()
+	{
+		//game.invalidate();
+		//game.validate();
+		game.repaint();
 	}
 
 	//Deals cards in a clockwise position starting with the "last" computer before ending at the dealer.
@@ -283,11 +383,76 @@ public class Game
 	//Checks starting hand for blackjacks
 	public static void checkBlackjack()
 	{
+		//Checks to see if chosen computer has a blackjack. Adjusts accordingly based on dealer
 		if(computers != null)
 			for(int i = computers.length-1; i>=0; i--)
 			{
-				if(computers[i].hasAce());
-					
+				if(computers[i].getTotal() == 21 && dealer.getTotal() != 21)
+				{
+					computers[i].adjustChips((int) (bet*1.5));
+					blackjack = true;
+				}
+				else if(computers[i].getTotal() == 21 && dealer.getTotal() == 21)
+				{
+					computers[i].adjustChips(bet);
+					blackjack = true;
+				}
 			}
+		
+		//Checks if user has blackjack. Adjusts accordingly based on dealer
+		if(user.getTotal() == 21 && dealer.getTotal() != 21)
+		{
+			user.adjustChips((int) (bet*1.5));
+			blackjack = true;
+		}
+		else if(user.getTotal() == 21 && dealer.getTotal() == 21)
+		{
+			user.adjustChips(bet);
+			blackjack = true;
+		}
+		
+		//Checks to see if dealer has blackjack
+		if(dealer.getTotal() == 21)
+			blackjack = true;
+	}
+	
+	//Calculates payout if necessary, resets all relevant variables
+	public static void postHand()
+	{		
+		//Only calculates hand totals if there was not a blackjack
+		if(!blackjack)
+		{
+			//Checks to see if computer won. Adjusts chip amount if they did. Resets.
+			if(computers != null)
+				for(int i = computers.length-1; i>=0; i--)
+				{
+					if(!computers[i].isBusted() && dealer.isBusted())			//If chosen computer is in play and dealer is busted
+						computers[i].adjustChips(bet*2);						//chosen computer gets initial bet matched
+					else if(!computers[i].isBusted() && !dealer.isBusted())		//If chosen computer and dealer are in play
+					{
+						if(computers[i].getTotal() > dealer.getTotal())			//If chosen computer total beats dealer total
+							computers[i].adjustChips(bet*2);					//Chosen computer gets bet matched
+						else if (computers[i].getTotal() == dealer.getTotal())	//If totals are the same
+							computers[i].adjustChips(bet);						//Chosen computer gets initial bet back
+					}
+					computers[i].reset();
+				}
+			
+			//Checks to see if user won. Adjusts chip amount if they did. Resets.
+			if(!user.isBusted() && dealer.isBusted())			//If user is in play and dealer is busted
+				user.adjustChips(bet*2);						//User gets initial bet matched
+			else if(!user.isBusted() && !dealer.isBusted())		//If user and dealer are in play
+			{
+				if(user.getTotal() > dealer.getTotal())			//If user total beats dealer total
+					user.adjustChips(bet*2);					//User gets bet matched
+				else if (user.getTotal() == dealer.getTotal())	//If totals are the same
+					user.adjustChips(bet);						//User gets initial bet back
+			}
+		}
+		blackjack = false;
+		dealerPlayed = false;
+		deck.resetDeck();
+		user.reset();
+		dealer.reset();
 	}
 }

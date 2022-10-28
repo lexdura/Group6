@@ -5,18 +5,18 @@ public class Dealer
 	private String name;
 	private Card card1;
 	private Card card2;
-	private Card[] hitCards = new Card[52];
+	private Card[] hitCards = new Card[10];
 	private int total;
 	private boolean bust;
 	private boolean hasAce;
+	private static final Card fillerCard = new Card("Joker", 0);
 	
 	//Constructor
 	public Dealer()
 	{
 		name = "Dealer";
-		card1 = null;
-		card2 = null;
-		hitCards = null;
+		card1 = fillerCard;
+		card2 = fillerCard;
 		total = 0;
 		bust = false;
 		hasAce = false;
@@ -32,6 +32,12 @@ public class Dealer
 	public Card getCard2()
 	{
 		return card2;
+	}
+	
+	//Returns total;
+	public int getTotal()
+	{
+		return total;
 	}
 	
 	//Sets card1 to incoming card
@@ -68,13 +74,19 @@ public class Dealer
 		return name;
 	}
 	
+	//Returns bust value
+	public boolean isBusted()
+	{
+		return bust;
+	}
+	
 	//Resets relevant variables between hands
 	public void reset()
 	{
 		total = 0;
-		card1 = null;
-		card2 = null;
-		hitCards = null;
+		card1 = fillerCard;
+		card2 = fillerCard;
+		hitCards = new Card[10];
 		bust = false;
 		hasAce = false;
 	}
