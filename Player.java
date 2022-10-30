@@ -1,16 +1,15 @@
 package blackjack;
 
+import java.util.ArrayList;
+
 public class Player 
 {
 	private String name;
 	private int chips;
 	private int total;
-	private Card card1;
-	private Card card2;
-	private Card[] hitCards;
+	private ArrayList<Card> playerCards;
 	private boolean bust;
 	private boolean hasAce;
-	private static final Card fillerCard = new Card("Joker", 0);
 	
 	//Constructor
 	public Player(String chosenName, int startingChips)
@@ -18,9 +17,7 @@ public class Player
 		name = chosenName;
 		chips = startingChips;
 		total = 0;
-		card1 = fillerCard;
-		card2 = fillerCard;
-		hitCards = new Card[10];
+		playerCards = new ArrayList<Card>();
 		bust = false;
 		hasAce = false;
 	}
@@ -37,21 +34,18 @@ public class Player
 		return chips;
 	}
 	
-	//Returns card1
-	public Card getCard1()
+	//Returns playerCard of position x
+	public Card getPlayerCard(int x)
 	{
-		return card1;
-	}
-		
-	//Returns card2
-	public Card getCard2()
-	{
-		return card2;
+		return playerCards.get(x);
 	}
 	
 	//Returns total
 	public int getTotal()
 	{
+		total = 0;
+		for(Card i : playerCards)
+			total += i.getValue();
 		return total;
 	}
 	
@@ -61,22 +55,10 @@ public class Player
 		chips += x;
 	}
 	
-	//Sets card1 to incoming card
-	public void setCard1(Card c)
+	//Adds card c to PlayerCards
+	public void addCard(Card c)
 	{
-		card1 = c;
-	}
-	
-	//Sets card2 to incoming card
-	public void setCard2(Card c)
-	{
-		card2 = c;
-	}
-	
-	//Returns desired hitCard (assumes exclusion of 0-starting-count)
-	public Card getHitCard(int x)
-	{
-		return hitCards[x+1];
+		playerCards.add(c);
 	}
 	
 	//Returns bust value
@@ -88,20 +70,18 @@ public class Player
 	//Checks to see if an ace is held
 	public boolean hasAce()
 	{
-		if(card1.getValue() == 1)
-			hasAce = true;
-		if(card2.getValue() == 1)
-			hasAce = true;
+		for(int i=0; i < playerCards.size(); i++)
+		{
+			if(playerCards.get(i).getValue() == 1)
+				hasAce = true;
+		}
 		return hasAce;
 	}
 	
 	//Resets relevant variables between hands
 	public void reset()
 	{
-		total = 0;
-		card1 = fillerCard;
-		card2 = fillerCard;
-		hitCards = new Card[10];
+		playerCards.clear();
 		bust = false;
 		hasAce = false;
 	}
@@ -110,17 +90,13 @@ public class Player
 	public void playTurn(Deck deck)
 	{
 		//Checks initial cards to see if there's an ace
-		if(card1.getValue() == 1 || card2.getValue() == 1)
-			hasAce = true;
-		
-		//Initial card total
-		total = card1.getValue() + card2.getValue();
+		hasAce();
 		
 		//Logic loop
 		while(true)
 		{
 			//Computer is hard-stopped at 17+
-			if(total >= 17)
+			if(getTotal() >= 17)
 				return;
 				
 			/*If computer has an ace AND if counting the ace as 11
@@ -128,22 +104,18 @@ public class Player
 			 * play will continue.
 			 */
 			if(hasAce)
-				if(total + 10 >= 17 && total + 10 <= 21)
+				if(getTotal() + 10 >= 17 && getTotal() + 10 <= 21)
 					return;
 				
-			//Picks up next card 
-			for(int i=0; i<hitCards.length; i++)
-				if(hitCards[i] == null) //Ensures addition, not replacement
-				{
-					hitCards[i] = deck.getNextCard();
-					if(hitCards[i].getValue() == 1) //Checks to see if an ace is picked up
-						hasAce = true;
-					total += hitCards[i].getValue(); //Updates the total
-					i = hitCards.length; //Kicks out of the loop as soon as a new card is added
-				}
+			//Picks up next card
+			playerCards.add(deck.getNextCard());
+			
+			//Checks if the picked up card was an ace
+			if(playerCards.get(playerCards.size()-1).getValue() == 1)
+				hasAce = true;
 				
 			//Checking to see if computer busts
-			if(total > 21)
+			if(getTotal() > 21)
 			{
 				bust = true;
 				return;
