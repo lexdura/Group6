@@ -67,6 +67,8 @@ public class Dealer
 	//Returns bust value
 	public boolean isBusted()
 	{
+		if(getTotal() > 21)
+			bust = true;
 		return bust;
 	}
 	

@@ -64,6 +64,8 @@ public class Player
 	//Returns bust value
 	public boolean isBusted()
 	{
+		if(getTotal() > 21)
+			bust = true;
 		return bust;
 	}
 	

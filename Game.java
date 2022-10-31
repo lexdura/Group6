@@ -3,55 +3,32 @@ package blackjack;
 import javax.swing.*;
 import java.awt.Color;
 import java.awt.FlowLayout;
+import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 
 public class Game 
 {
 	//Variables to be used throughout the game
 	static Player user = null;
-	static Player[] computers = null;
+	static ArrayList<Player> computers = new ArrayList<Player>();
 	static Deck deck = new Deck();
 	static Dealer dealer = new Dealer();
 	static int initialPurse;
 	static int numOfPlayers;
 	static int bet;
-	static boolean blackjack = false;
+	static int doubleDownAmount;
 	static boolean dealerPlayed = false;
-	static boolean userPlayed = false;
+	static boolean doubledDown;
+	static boolean userPlayed;
 	static String name;
 	static JFrame game = new JFrame("G6 - Blackjack");
+	static JPanel gamePanel = new JPanel();
 			
 	public static void main(String[] args)
 	{
 		gameGUI();
-		
-		//Play goes clockwise
-		if(computers != null)
-			for(int i = computers.length-1; i>=0; i--)
-				computers[i].playTurn(deck);
-		
-		//Player plays their turn
-		
-		/*If one player still left, have dealer take their turn. 
-		 * Checks computer busts first. Then user.
-		 */
-		if(computers != null)
-			for(int i = computers.length-1; i>=0; i--)
-				if(computers[i].isBusted() == false)
-				{
-					//If there's a computer left, dealer takes turn & kicks out of loop
-					dealer.playTurn(deck);
-					dealerPlayed = true;
-					i=-1;
-				}
-		if(user.isBusted() == false && dealerPlayed == false)
-			dealer.playTurn(deck);
-		updateGUI();
-		
-		//Post hand. Adjust chip amounts, reset deck
-		postHand();					
-		updateGUI();
 	}
 	
 	//Gets information from the user
@@ -60,6 +37,7 @@ public class Game
 		//Creating and framing all necessary items for the GUI
 		JDialog userInfo = new JDialog(f, "Who are you?", true);
 		userInfo.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+		userInfo.setLocationRelativeTo(null);
 		JPanel panel = new JPanel();
 		panel.setSize(450, 350);
 		panel.setLayout(null);
@@ -126,19 +104,23 @@ public class Game
 	//Creates the GUI
 	public static void gameGUI()
 	{
+		
 		//Frame for game
 		getInfo(game);
 		game.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         game.setSize(1200, 800);
+        game.setLocationRelativeTo(null);
 		game.setLayout(null);
+		gamePanel.setSize(game.getSize());
+		gamePanel.setLayout(null);
+		game.add(gamePanel);
 		
 		//Populate the game with the # of players. Assign names & chip value
 		user = new Player(name, initialPurse);
 		if(numOfPlayers>0)
 		{
-			computers = new Player[numOfPlayers];
 			for(int i=0; i<numOfPlayers; i++)
-				computers[i] = new Player("Computer " + (i+1), initialPurse);
+				computers.add(new Player ("Computer" + (i+1), initialPurse));
 		}
 		
 		//panel for dealer
@@ -151,7 +133,7 @@ public class Game
 		JLabel dealerName = new JLabel("Dealer");
 		dealerPanel.add(dealerName);
 		dealerPanel.add(dealerCardPanel);
-		game.add(dealerPanel);
+		gamePanel.add(dealerPanel);
 		
 		//panel for player
         JPanel userPanel = new JPanel();
@@ -165,7 +147,7 @@ public class Game
         userPanel.add(userName);
         userPanel.add(purse);
         userPanel.add(userCardPanel);
-        game.add(userPanel);
+        gamePanel.add(userPanel);
 		
 		//panel for additional player 1
 		if(numOfPlayers > 0)
@@ -176,12 +158,12 @@ public class Game
 			comp1Panel.setLayout(new FlowLayout(FlowLayout.CENTER, 75, 10));
 			JPanel comp1CardPanel = new JPanel();
 			comp1CardPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 10));
-			JLabel comp1Name = new JLabel(computers[0].getName());
-			JLabel comp1Chips = new JLabel(Integer.toString(computers[0].getChips()));
+			JLabel comp1Name = new JLabel(computers.get(0).getName());
+			JLabel comp1Chips = new JLabel(Integer.toString(computers.get(0).getChips()));
 			comp1Panel.add(comp1Name);
 			comp1Panel.add(comp1Chips);
 			comp1Panel.add(comp1CardPanel);
-			game.add(comp1Panel);
+			gamePanel.add(comp1Panel);
 		}
 		
 		//Panel for additional player 2
@@ -193,12 +175,12 @@ public class Game
 			comp2Panel.setLayout(new FlowLayout(FlowLayout.CENTER, 75, 10));
 			JPanel comp2CardPanel = new JPanel();
 			comp2CardPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 10));
-			JLabel comp2Name = new JLabel(computers[1].getName());
-			JLabel comp2Chips = new JLabel(Integer.toString(computers[1].getChips()));
+			JLabel comp2Name = new JLabel(computers.get(1).getName());
+			JLabel comp2Chips = new JLabel(Integer.toString(computers.get(1).getChips()));
 			comp2Panel.add(comp2Name);
 			comp2Panel.add(comp2Chips);
 			comp2Panel.add(comp2CardPanel);
-			game.add(comp2Panel);
+			gamePanel.add(comp2Panel);
 		}
 
 		//Panel for additional player 3
@@ -208,11 +190,11 @@ public class Game
 			comp3Panel.setBackground(Color.GREEN);
 			comp3Panel.setBounds(900,314,300,240);
 			comp3Panel.setLayout(null);
-			JLabel comp3Name = new JLabel(computers[2].getName());
-			JLabel comp3Chips = new JLabel(Integer.toString(computers[2].getChips()));
+			JLabel comp3Name = new JLabel(computers.get(2).getName());
+			JLabel comp3Chips = new JLabel(Integer.toString(computers.get(2).getChips()));
 			comp3Panel.add(comp3Name);
 			comp3Panel.add(comp3Chips);
-			game.add(comp3Panel);
+			gamePanel.add(comp3Panel);
 		}
 		
 		//Panel for game-play choices
@@ -236,21 +218,11 @@ public class Game
 		choicePanel.add(split);
 		JButton surrender = new JButton("Surrender");
 		choicePanel.add(surrender);
-		//Changes buttons shown depending on where the hand is at
-		if(!userPlayed)
-		{
-			choicePanel.add(betAmount);
-			choicePanel.add(enteredAmount);
-			choicePanel.add(deal);
-		}
-		else
-		{
-			choicePanel.remove(betAmount);
-			choicePanel.remove(deal);
-			choicePanel.remove(enteredAmount);
-		}
+		choicePanel.add(betAmount);
+		choicePanel.add(enteredAmount);
+		choicePanel.add(deal);
 		
-		game.add(choicePanel);
+		gamePanel.add(choicePanel);
 		
 		
 		/*
@@ -268,17 +240,37 @@ public class Game
 				{
 					//Stores the bet to be used across each player
 					bet = Integer.parseInt(enteredAmount.getText());
+					doubleDownAmount = bet * 2;
 					if(computers != null)
-						for(int i = computers.length-1; i>=0; i--)
-							computers[i].adjustChips(~(bet - 1));	//Subtracts bet from current purse
-					user.adjustChips(~(bet - 1));					//Subtracts bet from current purse
+						for(int i = computers.size()-1; i>=0; i--)
+							computers.get(i).adjustChips(~(bet - 1));	//Subtracts bet from current purse
+					user.adjustChips(~(bet - 1));						//Subtracts bet from current purse
 					
 					deal();
-					
-					//Check for Blackjack. If so, do postHand() and a new hand is started
-					checkBlackjack();
-					
 					updateGUI();
+					
+					//Check for Blackjack. If true, a new hand is started
+					if(checkBlackjack())
+					{
+						//Resets all relevant variables and classes
+						dealerPlayed = false;
+						userPlayed = false;
+						deck.resetDeck();
+						user.reset();
+						dealer.reset();
+						for(Player p : computers)
+							p.reset();
+					}
+					//Otherwise, continue as normal
+					else
+					{
+						updateGUI();
+					
+						//Play goes clockwise
+						if(computers != null)
+							for(int i = computers.size()-1; i>=0; i--)
+								computers.get(i).playTurn(deck);
+					}
 				}
 			}
 		});
@@ -288,7 +280,8 @@ public class Game
 		{
 			public void actionPerformed(ActionEvent e)
 			{
-				userPlayed = true;
+				user.addCard(deck.getNextCard());
+				updateGUI();
 			}
 		});
 		
@@ -297,7 +290,23 @@ public class Game
 		{
 			public void actionPerformed(ActionEvent e)
 			{
+				/*If one player still left, have dealer take their turn. 
+				 * Checks computer busts first. Then user.
+				 */
+				if(computers != null)
+					for(int i = computers.size()-1; i>=0; i--)
+						if(computers.get(i).isBusted() == false)
+						{
+							//If there's a computer left, dealer takes turn & kicks out of loop
+							dealer.playTurn(deck);
+							dealerPlayed = true;
+							i=-1;
+						}
+				if(user.isBusted() == false && dealerPlayed == false)
+					dealer.playTurn(deck);
+				
 				userPlayed = true;
+				postHand();
 			}
 		});
 		
@@ -306,7 +315,29 @@ public class Game
 		{
 			public void actionPerformed(ActionEvent e)
 			{
+				//Subtracts bet amount again and deals a singular card
+				user.adjustChips(~(bet - 1));
+				user.addCard(deck.getNextCard());
+				
+				/*If one player still left, have dealer take their turn. 
+				 * Checks computer busts first. Then user.
+				 */
+				if(computers != null)
+					for(int i = computers.size()-1; i>=0; i--)
+						if(computers.get(i).isBusted() == false)
+						{
+							//If there's a computer left, dealer takes turn & kicks out of loop
+							dealer.playTurn(deck);
+							dealerPlayed = true;
+							i=-1;
+						}
+				if(user.isBusted() == false && dealerPlayed == false)
+					dealer.playTurn(deck);
+				
+				//Adjusts relevant variables
+				doubledDown = true;
 				userPlayed = true;
+				postHand();
 			}
 		});
 		
@@ -315,7 +346,6 @@ public class Game
 		{
 			public void actionPerformed(ActionEvent e)
 			{
-				userPlayed = true;
 			}
 		});
 		
@@ -331,43 +361,47 @@ public class Game
         game.setVisible(true);
 	}
 	
-	//Updates the gameGUI
+	//Updates the GUI
 	public static void updateGUI()
 	{
-		game.setVisible(false);
-		game.setVisible(true);
+		gamePanel.revalidate();
+		gamePanel.repaint();
+		game.revalidate();
+		game.repaint();
+		gamePanel.updateUI();
 	}
 
 	//Deals cards in a clockwise position starting with the "last" computer before ending at the dealer.
 	public static void deal()
 	{
-		//While the dealer doesn't have 2 cards
-		while(dealer.getDealerCard(1) == null)
+		//While the dealer doesn't have 2 card in their hand
+		while(dealer.handSize() < 2)
 		{
 			//Checks to see if there are computers
 			if(computers != null)
-				for(int i = computers.length-1; i>=0; i--)
-					computers[i].addCard(deck.getNextCard());
+				for(int i = computers.size()-1; i>=0; i--)
+					computers.get(i).addCard(deck.getNextCard());
 			user.addCard(deck.getNextCard());
 			dealer.addCard(deck.getNextCard());
 		}
 	}
 	
 	//Checks starting hand for blackjacks
-	public static void checkBlackjack()
+	public static boolean checkBlackjack()
 	{
+		boolean blackjack = false;
 		//Checks to see if chosen computer has a blackjack. Adjusts accordingly based on dealer
 		if(computers != null)
-			for(int i = computers.length-1; i>=0; i--)
+			for(int i = computers.size()-1; i>=0; i--)
 			{
-				if(computers[i].getTotal() == 21 && dealer.getTotal() != 21)
+				if(computers.get(i).getTotal() == 21 && dealer.getTotal() != 21)
 				{
-					computers[i].adjustChips((int) (bet*1.5));
+					computers.get(i).adjustChips((int) (bet*1.5));
 					blackjack = true;
 				}
-				else if(computers[i].getTotal() == 21 && dealer.getTotal() == 21)
+				else if(computers.get(i).getTotal() == 21 && dealer.getTotal() == 21)
 				{
-					computers[i].adjustChips(bet);
+					computers.get(i).adjustChips(bet);
 					blackjack = true;
 				}
 			}
@@ -387,44 +421,59 @@ public class Game
 		//Checks to see if dealer has blackjack
 		if(dealer.getTotal() == 21)
 			blackjack = true;
+		
+		//If no one has a blackjack, returns false
+		return blackjack;
 	}
 	
 	//Calculates payout if necessary, resets all relevant variables
 	public static void postHand()
 	{		
-		//Only calculates hand totals if there was not a blackjack
-		if(!blackjack)
-		{
-			//Checks to see if computer won. Adjusts chip amount if they did. Resets.
-			if(computers != null)
-				for(int i = computers.length-1; i>=0; i--)
-				{
-					if(!computers[i].isBusted() && dealer.isBusted())			//If chosen computer is in play and dealer is busted
-						computers[i].adjustChips(bet*2);						//chosen computer gets initial bet matched
-					else if(!computers[i].isBusted() && !dealer.isBusted())		//If chosen computer and dealer are in play
-					{
-						if(computers[i].getTotal() > dealer.getTotal())			//If chosen computer total beats dealer total
-							computers[i].adjustChips(bet*2);					//Chosen computer gets bet matched
-						else if (computers[i].getTotal() == dealer.getTotal())	//If totals are the same
-							computers[i].adjustChips(bet);						//Chosen computer gets initial bet back
-					}
-					computers[i].reset();
-				}
-			
-			//Checks to see if user won. Adjusts chip amount if they did. Resets.
-			if(!user.isBusted() && dealer.isBusted())			//If user is in play and dealer is busted
-				user.adjustChips(bet*2);						//User gets initial bet matched
-			else if(!user.isBusted() && !dealer.isBusted())		//If user and dealer are in play
+		//Checks to see if computer won. Adjusts chip amount if they did. Resets.
+		if(computers != null)
+			for(int i = computers.size()-1; i>=0; i--)
 			{
-				if(user.getTotal() > dealer.getTotal())			//If user total beats dealer total
-					user.adjustChips(bet*2);					//User gets bet matched
-				else if (user.getTotal() == dealer.getTotal())	//If totals are the same
-					user.adjustChips(bet);						//User gets initial bet back
+				if(!computers.get(i).isBusted() && dealer.isBusted())			//If chosen computer is in play and dealer is busted
+					computers.get(i).adjustChips(bet*2);						//chosen computer gets initial bet matched
+				else if(!computers.get(i).isBusted() && !dealer.isBusted())		//If chosen computer and dealer are in play
+				{
+					if(computers.get(i).getTotal() > dealer.getTotal())			//If chosen computer total beats dealer total
+						computers.get(i).adjustChips(bet*2);					//Chosen computer gets bet matched
+					else if (computers.get(i).getTotal() == dealer.getTotal())	//If totals are the same
+						computers.get(i).adjustChips(bet);						//Chosen computer gets initial bet back
+				}
+				computers.get(i).reset();
 			}
-		}
+			
+			//Accounts for player doubling down. Adjusts accordingly.
+			if(!doubledDown)
+			{	
+				//Checks to see if user won. Adjusts chip amount if they did. Resets.
+				if(!user.isBusted() && dealer.isBusted())			//If user is in play and dealer is busted
+					user.adjustChips(bet*2);						//User gets initial bet matched
+				else if(!user.isBusted() && !dealer.isBusted())		//If user and dealer are in play
+				{
+					if(user.getTotal() > dealer.getTotal())			//If user total beats dealer total
+						user.adjustChips(bet*2);					//User gets bet matched
+					else if (user.getTotal() == dealer.getTotal())	//If totals are the same
+						user.adjustChips(bet);						//User gets initial bet back
+				}
+			}
+			else
+			{
+				if(!user.isBusted() && dealer.isBusted())			//If user is in play and dealer is busted
+					user.adjustChips(doubleDownAmount*2);			//User gets double down bet matched
+				else if(!user.isBusted() && !dealer.isBusted())		//If user and dealer are in play
+				{
+					if(user.getTotal() > dealer.getTotal())			//If user total beats dealer total
+						user.adjustChips(doubleDownAmount*2);		//User gets double down matched
+					else if (user.getTotal() == dealer.getTotal())	//If totals are the same
+						user.adjustChips(doubleDownAmount);			//User gets double down bet back
+				}
+			}
 		//Resets all relevant variables and classes
-		blackjack = false;
 		dealerPlayed = false;
+		userPlayed = false;
 		deck.resetDeck();
 		user.reset();
 		dealer.reset();
